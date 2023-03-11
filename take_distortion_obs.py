@@ -15,19 +15,37 @@ from datetime import datetime
 dither_spacing = 2.1 #mm
 dither_grid_size = 5  #5x5 grid
 position_angles =[0, 45]  #degrees
- #--------------------------------------
-
-pinhole_x = 90  #the centre of the dither pattern
+pinhole_x = 90  #x_stage location for the centre of the dither pattern
 pinhole_y = 180
+#--------------------------------------
 
+#-------------Keck Keywords--------------
+keck_kw = { 'ao':'ao1'
+			'm1':'PCUM1POS',      #The same as x,y,z?
+			'm2':'PCUM2POS',
+			'm3':'PCUM3POS',
+			'r':'PCUPR',
+			'x':'PCUX',           #PCSFX
+			'y':'PCUY',           #PCSFY
+			'z':'PCUZ',           #PCSFLZ
+			'state':'PCUSTATE'    #PCSFSTATE    #old? 
+			'status':'PCUSTST'
+			'r_status':'PCURSTST'  #may show the same as status? Check if needed when doing rotational blocking moves.
+			'named_pos':'PCUNAME'  #PCSFNAME
+			'pinhole':'to_pinhole_mask',		
+			}
+#----------------------------------------
+
+#---------epics keywords---------------
 pcu_status = epics.PV('k1:ao:pcu:stst')
 pcu_request = epics.PV('k1:ao:pcu:request')
 pcu_x = {'name':'x','write':epics.PV('k1:ao:pcu:M1Pos'),'read':epics.PV('k1:ao:pcu:M1Pos')}
 pcu_y = {'name':'y','write':epics.PV('k1:ao:pcu:M2Pos'),'read':epics.PV('k1:ao:pcu:M2Pos')}
 pcu_uz = {'name':'uz','write':epics.PV('k1:ao:pcu:M3Pos'),'read':epics.PV('k1:ao:pcu:M3Pos')}
 pcu_r = {'name':'r','write':epics.PV('k1:ao:pcu:rot:pos'),'read':epics.PV('k1:ao:pcu:rot:pos Rb')}
+#--------------------------------------
 
-def main(mode = 'epics'):
+def main(mode = 'keck_keywords'):
 
 	extent = (dither_grid_size-1) * dither_spacing /2
 	grid_steps_x = np.linspace(pinhole_x-extent,pinhole_y+extent,dither_grid_size)
@@ -62,15 +80,15 @@ def main(mode = 'epics'):
 				direction*=-1
 
 	else:
-		blockMoveNP('to_pinhole_mask')
-		blockMove('PCUM3POS',99.32)
+		blockMoveNP(keck_kw['pinhole'])
+		blockMove(keck_kw['m3'],99.32)
 		for angle in position_angles:
-			blockMove('rotator keyword not added yet',65.7 + angle)
+			blockMove(keck_kw['r'],65.7 + angle)
 			direction = 1
 			for y in grid_steps_y:
-				blockMove('PCUM2POS',y)	
+				blockMove(keck_kw['m2'],y)	
 				for x in grid_steps_x[::direction]:
-					blockMove('PCUM1POS',x)	
+					blockMove(keck_kw['m1'],x)	
 					img_filename = take_image()
 					log_entry(img_filename, pcu_x['read'].get(),pcu_y['read'].get(),pcu_uz['read'].get(),pcu_r['read'].get(),'')
 				direction*=-1
@@ -105,11 +123,11 @@ def blockMoveNPEpics(target):
 		time.sleep(2)
 
 def blockMove(keyword, position):
-	ktl.write('ao1', keyword, position)
+	ktl.write(keck_kw['ao'], keyword, position)
 	time.sleep(1)
 	while True:
-		pcu = ktl.read('ao1', keyword)
-		status = ktl.read('ao1', 'PCSFSTATE')
+		pcu = ktl.read(keck_kw['ao'], keyword)
+		status = ktl.read(keck_kw['ao'], keck_kw['status'])
 		print(keyword +' is at ' + str(pcu) + ' mm and state is ' + status)
 		if status == 'INPOS':
 			print(keyword +' has reached designated position')
@@ -119,13 +137,13 @@ def blockMove(keyword, position):
 			time.sleep(2)
 
 def blockMoveNP(target):
-	ktl.write('ao1', 'PCSFNAME', target)
+	ktl.write(keck_kw['ao'], keck_kw['named_pos'], target)
 	time.sleep(1)
 	while True:
-		pcux = ktl.read('ao1', 'PCSFX')
-		pcuy = ktl.read('ao1', 'PCSFY')
-		pculz = ktl.read('ao1', 'PCSFLZ')
-		status = ktl.read('ao1', 'PCSFSTATE')
+		pcux = ktl.read(keck_kw['ao'], keck_kw['x'])
+		pcuy = ktl.read(keck_kw['ao'], keck_kw['y'])
+		pculz = ktl.read(keck_kw['ao'], keck_kw['z'])
+		status = ktl.read(keck_kw['ao'], keck_kw['status'])
 		print('PCUX = ' + pcux + ', PCUY = ' + pcuy + ', PCUZ = ' + pculz + ' and state is ' + status)
 		if status == 'INPOS':
 			print('Stage has reached designated position')
