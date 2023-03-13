@@ -167,7 +167,7 @@ def log_entry(filename,x,y,z,r,flag):
 	logging.info('{:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format(filename,x,y,z,r,flag))
 
 #--------------------------------
-main('epics')
+main('keck_keywords')
 sys.exit(0)
 #--------------------------------
 
