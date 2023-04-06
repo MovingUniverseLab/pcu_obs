@@ -53,6 +53,7 @@ def main():
 	grid_steps_y = np.linspace(pinhole_y-extent,pinhole_y+extent,dither_grid_size)
 	print('X grid steps = {}'.format(grid_steps_x))
 	print('Y grid steps = {}'.format(grid_steps_y))
+	check_limits(grid_steps_x,grid_steps_y,pinhole_x,pinhole_y)
 	total_frames = len(grid_steps_x) * len(grid_steps_y) * len(position_angles)
 	subprocess.run(['lamp', 'dome', '0'])  
 	subprocess.run(['iitime', integration_time])
@@ -137,6 +138,17 @@ def make_log():
 def log_entry(filename,x,y,z,r,flag):
 	logging.info('{:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format(filename,x,y,z,r,flag))
 
+
+def check_limits(x_grid,y_grid,x_pinhole,y_pinhole):
+	#the function checks that all grid positions are with a 12 mm radius from the central position
+	radius_limit = 12
+	for x in x_grid:
+		for y in y_grid:
+			radius = np.hypot(x-x_pinhole,y-y_pinhole)
+			if radius > radius_limit:
+				print('Grid position {},{} is outside the {}mm radius from {},{}'.format(x,y,radius_limit,x_pinhole,y_pinhole))
+				print('Aborting')
+				sys.exit(0)
 
 def main_epics():
 	extent = (dither_grid_size-1) * dither_spacing /2
