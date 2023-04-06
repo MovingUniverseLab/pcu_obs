@@ -18,6 +18,7 @@ position_angles =[0] # e.g. [0, 45] degrees
 pinhole_x = 90  #x_stage location for the centre of the dither pattern
 pinhole_y = 185
 #max radius = 12mm -> max grid extent = 16.8mm
+integration_time = '10' #'10' for dome flat postion, '60' for horizon with tertiary not aligned
 #--------------------------------------
 
 #-------------Keck Keywords--------------
@@ -25,14 +26,14 @@ keck_kw = { 'ao':'ao1',
 			#'m1':'PCUM1POS',      #Duplicates of x,y,z?
 			#'m2':'PCUM2POS',
 			#'m3':'PCUM3POS',
-			#'r':'PCUPR',
-			'x':'PCSFX',           #PCSFX
-			'y':'PCSFY',           #PCSFY
-			'z':'PCSFUZ',           #PCSFLZ
-			'state':'PCSFSTATE',    #PCSFSTATE    #old? 
+			'r':'PCUPR',
+			'x':'PCSFX',           #PCUX
+			'y':'PCSFY',           #PCUY
+			'z':'PCSFUZ',           #PCULZ
+			'state':'PCSFSTATE',    #PCUSTATE 
 			'status':'PCSFSTST',
 			#'r_status':'PCURSTST',  #may show the same as status? Check if needed when doing rotational blocking moves.
-			'named_pos':'PCSFNAME',  #PCSFNAME
+			'named_pos':'PCSFNAME',  #PCUNAME
 			'pinhole':'pinhole_mask',		
 			}
 #----------------------------------------
@@ -54,7 +55,7 @@ def main():
 	print('Y grid steps = {}'.format(grid_steps_y))
 	total_frames = len(grid_steps_x) * len(grid_steps_y) * len(position_angles)
 	subprocess.run(['lamp', 'dome', '0'])  
-	subprocess.run(['iitime', '10'])  	#in test 1, an integration time of 20 seconds gave peaks of ~7000 counts. Target 15,000 counts. Try integration time 40?
+	subprocess.run(['iitime', integration_time])
 	subprocess.run(['icoadds', '1'])  
 	#subprocess.run(['insamp', '4']) 		#readout mode
 	print('(Set K rotator to 225?)')
@@ -70,7 +71,7 @@ def main():
 	blockMove(keck_kw['z'],99.32)
 	frame_number = 1
 	for angle in position_angles:
-		#blockMove(keck_kw['r'],65.7 + angle)
+		blockMove(keck_kw['r'],65.7 + angle)
 		direction = 1
 		for y in grid_steps_y:
 			blockMove(keck_kw['y'],y)	
@@ -83,8 +84,8 @@ def main():
 				pcux = ktl.read(keck_kw['ao'], keck_kw['x'])
 				pcuy = ktl.read(keck_kw['ao'], keck_kw['y'])
 				pcupz = ktl.read(keck_kw['ao'], keck_kw['z'])
-				#pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
-				pcur = '110.7005'
+				pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
+ 				#pcur = '65.7005'
 				log_entry(img_filename,pcux,pcuy,pcupz,pcur,'pinhole')
 			direction*=-1
 	print('Finished taking images. Time='+ datetime.now().strftime('%H%M%S'))
