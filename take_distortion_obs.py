@@ -52,8 +52,9 @@ def main():
 	grid_steps_y = np.linspace(pinhole_y-extent,pinhole_y+extent,dither_grid_size)
 	print('X grid steps = {}'.format(grid_steps_x))
 	print('Y grid steps = {}'.format(grid_steps_y))
+	total_frames = len(grid_steps_x) * len(grid_steps_y) * len(position_angles)
 	subprocess.run(['lamp', 'dome', '0'])  
-	subprocess.run(['iitime', '60'])  	#in test 1, an integration time of 20 seconds gave peaks of ~7000 counts. Target 15,000 counts. Try integration time 40?
+	subprocess.run(['iitime', '10'])  	#in test 1, an integration time of 20 seconds gave peaks of ~7000 counts. Target 15,000 counts. Try integration time 40?
 	subprocess.run(['icoadds', '1'])  
 	#subprocess.run(['insamp', '4']) 		#readout mode
 	print('(Set K rotator to 225?)')
@@ -67,6 +68,7 @@ def main():
 	#-----------starting moves-----------------
 	blockMoveNP(keck_kw['pinhole'])
 	blockMove(keck_kw['z'],99.32)
+	frame_number = 1
 	for angle in position_angles:
 		#blockMove(keck_kw['r'],65.7 + angle)
 		direction = 1
@@ -74,15 +76,18 @@ def main():
 			blockMove(keck_kw['y'],y)	
 			for x in grid_steps_x[::direction]:
 				blockMove(keck_kw['x'],x)	
+				print('Taking frame {}/{}'.format(frame_number,total_frames))
 				img_filename = take_image()
-				
+				frame_number+=1
+				img_filename = img_filename[-20:]
 				pcux = ktl.read(keck_kw['ao'], keck_kw['x'])
 				pcuy = ktl.read(keck_kw['ao'], keck_kw['y'])
 				pcupz = ktl.read(keck_kw['ao'], keck_kw['z'])
-				pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
-				log_entry(img_filename,pcux,pcuy,pcupz,pcur)
+				#pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
+				pcur = '110.7005'
+				log_entry(img_filename,pcux,pcuy,pcupz,pcur,'pinhole')
 			direction*=-1
-	print('Finished taking images')
+	print('Finished taking images. Time='+ datetime.now().strftime('%H%M%S'))
   
 
 def blockMove(keyword, position):
@@ -193,4 +198,3 @@ def blockMoveNPEpics(target):
 main()
 sys.exit(0)
 #--------------------------------
-
