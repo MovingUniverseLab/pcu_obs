@@ -13,8 +13,8 @@ from datetime import datetime
 
  #--------- Dither Pattern -------------
 dither_spacing = 2.1 #mm
-dither_grid_size = 2  # e.g. 5 = 5x5 grid
-position_angles =[0] # e.g. [0, 45] degrees
+dither_grid_size = 1  # e.g. 5 = 5x5 grid
+position_angles =[0,45] # e.g. [0, 45] degrees
 pinhole_x = 90  #x_stage location for the centre of the dither pattern
 pinhole_y = 185
 #max radius = 12mm -> max grid extent = 16.8mm
