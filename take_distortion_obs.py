@@ -17,7 +17,7 @@ dither_grid_size = 1  # e.g. 5 = 5x5 grid
 position_angles =[0,45,90] # e.g. [0, 45] degrees
 pinhole_x = 90  #x_stage location for the centre of the dither pattern
 pinhole_y = 185
-focus_positions = [99.32]   #z position when in focus. Enter multiple positions for phase diversity measurements.
+focus_positions = [99.32]   #z position when in focus. Enter multiple positions for phase diversity measurements.  Focus = 99.32, max = 102
 #max radius = 12mm -> max grid extent = 16.8mm
 integration_time = ['10'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
 #--------------------------------------
