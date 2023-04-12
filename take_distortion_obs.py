@@ -17,8 +17,9 @@ dither_grid_size = 1  # e.g. 5 = 5x5 grid
 position_angles =[0,45,90] # e.g. [0, 45] degrees
 pinhole_x = 90  #x_stage location for the centre of the dither pattern
 pinhole_y = 185
+focus_positions = [99.32]   #z position when in focus. Enter multiple positions for phase diversity measurements.
 #max radius = 12mm -> max grid extent = 16.8mm
-integration_time = '10' #'10' for dome flat postion, '60' for horizon with tertiary not aligned
+integration_time = ['10'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
 #--------------------------------------
 
 #-------------Keck Keywords--------------
@@ -54,9 +55,9 @@ def main():
 	print('X grid steps = {}'.format(grid_steps_x))
 	print('Y grid steps = {}'.format(grid_steps_y))
 	check_limits(grid_steps_x,grid_steps_y,pinhole_x,pinhole_y)
-	total_frames = len(grid_steps_x) * len(grid_steps_y) * len(position_angles)
+	total_frames = len(grid_steps_x) * len(grid_steps_y) * len(position_angles) * len(focus_positions)
 	subprocess.run(['lamp', 'dome', '0'])  
-	subprocess.run(['iitime', integration_time])
+	subprocess.run(['iitime', integration_time[0]])
 	subprocess.run(['icoadds', '1'])  
 	#subprocess.run(['insamp', '4']) 		#readout mode
 	print('(Set K rotator to 225?)')
@@ -69,26 +70,29 @@ def main():
 
 	#-----------starting moves-----------------
 	blockMoveNP(keck_kw['pinhole'])
-	blockMove(keck_kw['z'],99.32)
 	frame_number = 1
-	for angle in position_angles:
-		blockMove(keck_kw['r'],65.7 + angle)
-		direction = 1
-		for y in grid_steps_y:
-			blockMove(keck_kw['y'],y)	
-			for x in grid_steps_x[::direction]:
-				blockMove(keck_kw['x'],x)	
-				print('Taking frame {}/{}'.format(frame_number,total_frames))
-				img_filename = take_image()
-				frame_number+=1
-				img_filename = img_filename[-20:]
-				pcux = ktl.read(keck_kw['ao'], keck_kw['x'])
-				pcuy = ktl.read(keck_kw['ao'], keck_kw['y'])
-				pcupz = ktl.read(keck_kw['ao'], keck_kw['z'])
-				pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
- 				#pcur = '65.7005'
-				log_entry(img_filename,pcux,pcuy,pcupz,pcur,'pinhole')
-			direction*=-1
+	for i, z in enumerate(focus_positions):
+		blockMove(keck_kw['z'],z)
+		if len(integration_time)>1:
+			subprocess.run(['iitime', integration_time[i]])
+		for angle in position_angles:
+			blockMove(keck_kw['r'],65.7 + angle)
+			direction = 1
+			for y in grid_steps_y:
+				blockMove(keck_kw['y'],y)	
+				for x in grid_steps_x[::direction]:
+					blockMove(keck_kw['x'],x)	
+					print('Taking frame {}/{}'.format(frame_number,total_frames))
+					img_filename = take_image()
+					frame_number+=1
+					img_filename = img_filename[-20:]
+					pcux = ktl.read(keck_kw['ao'], keck_kw['x'])
+					pcuy = ktl.read(keck_kw['ao'], keck_kw['y'])
+					pcupz = ktl.read(keck_kw['ao'], keck_kw['z'])
+					pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
+	 				#pcur = '65.7005'
+					log_entry(img_filename,pcux,pcuy,pcupz,pcur,'pinhole')
+				direction*=-1
 	print('Finished taking images. Time='+ datetime.now().strftime('%H%M%S'))
   
 
