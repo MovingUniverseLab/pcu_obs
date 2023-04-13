@@ -34,7 +34,7 @@ if mode == 'phase_diversity':
 	dither_grid_size = 1  # e.g. 5 = 5x5 grid. 	#max radius = 12mm -> max grid extent = 16.8mm
 	rotation_angles =[0] # e.g. [0, 45] degrees
 	focus_positions = [pinhole_focus+2, pinhole_focus+0, pinhole_focus-2, pinhole_focus-4,]   #z position when in focus. Enter multiple positions for phase diversity measurements.  Focus = 99.32, max = 102
-	integration_time = ['60','60','60','60'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
+	integration_time = ['120','60','120','180'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
 	repeats = 3 #number of images to take at each location.
 #-------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ keck_kw = { 'ao':'ao1',
 			'z':'PCSFUZ',           #PCULZ
 			'state':'PCSFSTATE',    #PCUSTATE 
 			'status':'PCSFSTST',
-			#'r_status':'PCURSTST',  #may show the same as status? Check if needed when doing rotational blocking moves.
+			'r_status':'PCURSTST',  #may show the same as status? Check if needed when doing rotational blocking moves.
 			'named_pos':'PCSFNAME',  #PCUNAME
 			'pinhole':'pinhole_mask',		
 			}
@@ -125,10 +125,12 @@ def blockMove(keyword, position):
 	ktl.write(keck_kw['ao'], keyword, position)
 	time.sleep(2)
 	while True:
-		pcu = ktl.read(keck_kw['ao'], keyword)
+		stage_pos = ktl.read(keck_kw['ao'], keyword)
 		status = ktl.read(keck_kw['ao'], keck_kw['status'])
-		print(keyword +' is at ' + str(pcu) + ' and PCU state is ' + status)
-		if status == 'INPOS':
+		r_status = ktl.read(keck_kw['ao'], keck_kw['r_status'])
+		# print(keyword +' is at ' + str(stage_pos) + ' and PCU state is ' + status)
+		print('{} is at {}. PCU state: {}. Rotator state: {}'.format(keyword,stage_pos,status,r_status))
+		if status == 'INPOS' and r_status == 'INPOS':
 			print(keyword +' has reached designated position')
 			return
 		elif status == 'FAULT':
