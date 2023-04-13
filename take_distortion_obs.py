@@ -11,16 +11,33 @@ import ktl
 import logging
 from datetime import datetime
 
- #--------- Dither Pattern -------------
-dither_spacing = 6.16 #mm   #6.16 for 3x3, 3.1 for 5x5
-dither_grid_size = 1  # e.g. 5 = 5x5 grid
-position_angles =[0,45,90] # e.g. [0, 45] degrees
 pinhole_x = 90  #x_stage location for the centre of the dither pattern
 pinhole_y = 185
-focus_positions = [99.32]   #z position when in focus. Enter multiple positions for phase diversity measurements.  Focus = 99.32, max = 102
-#max radius = 12mm -> max grid extent = 16.8mm
-integration_time = ['10'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
-#--------------------------------------
+pinhole_focus = 99.32
+default_rotation = 65.7   #pinhole grid is horizontal with default K-mirror setting
+
+#----------------------Adjustable parameters-------------------------
+mode = 'distortion'
+# mode = 'phase_diversity'
+filter_band = 'Hbb'
+
+if mode == 'distortion':
+	dither_spacing = 6.16 #mm   #6.16 for 3x3, 3.1 for 5x5
+	dither_grid_size = 3  # e.g. 5 = 5x5 grid.  	#max radius = 12mm -> max grid extent = 16.8mm
+	rotation_angles =[0,45,90] # e.g. [0, 45] degrees
+	focus_positions = [pinhole_focus]   #z position when in focus. Enter multiple positions for phase diversity measurements.  Focus = 99.32, max = 102
+	integration_time = ['60'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
+	repeats = 1 #number of images to take at each location.
+
+if mode == 'phase_diversity':
+	dither_spacing = 6.16 #mm   #6.16 for 3x3, 3.1 for 5x5
+	dither_grid_size = 1  # e.g. 5 = 5x5 grid. 	#max radius = 12mm -> max grid extent = 16.8mm
+	rotation_angles =[0] # e.g. [0, 45] degrees
+	focus_positions = [pinhole_focus+2, pinhole_focus+0, pinhole_focus-2, pinhole_focus-4,]   #z position when in focus. Enter multiple positions for phase diversity measurements.  Focus = 99.32, max = 102
+	integration_time = ['60','60','60','60'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
+	repeats = 3 #number of images to take at each location.
+#-------------------------------------------------------------------
+
 
 #-------------Keck Keywords--------------
 keck_kw = { 'ao':'ao1',
@@ -54,16 +71,18 @@ def main():
 	grid_steps_y = np.linspace(pinhole_y-extent,pinhole_y+extent,dither_grid_size)
 	print('X grid steps = {}'.format(grid_steps_x))
 	print('Y grid steps = {}'.format(grid_steps_y))
+	print('R rotation angles = {}'.format(rotation_angles))
 	check_limits(grid_steps_x,grid_steps_y,pinhole_x,pinhole_y)
-	total_frames = len(grid_steps_x) * len(grid_steps_y) * len(position_angles) * len(focus_positions)
-	subprocess.run(['lamp', 'dome', '0'])  
+	total_frames = len(grid_steps_x) * len(grid_steps_y) * len(rotation_angles) * len(focus_positions) * repeats
+	# subprocess.run(['lamp', 'dome', '0'])  
 	subprocess.run(['iitime', integration_time[0]])
 	subprocess.run(['icoadds', '1'])  
 	#subprocess.run(['insamp', '4']) 		#readout mode
-	print('(Set K rotator to 225?)')
+	# print('(Set K rotator to 225?)')
 	# subprocess.run(['modify','-s','ao','obtdname=' + 'open'])   #Set TRICK to open or hband, takes 60 seconds.
 	# time.sleep(60) 
-	# subprocess.run(['ifilt', 'kp', 'open'])     #Set filter. eg 'Drk' or 'kp open' 
+	#subprocess.run(['ifilt', 'Kp', 'Open'])     #Set filter. eg 'Hbb', 'Open'   or  'Kp', 'Open' 
+	subprocess.run(['ifilt', filter_band, 'Open'])
 	# time.sleep(10)
 	make_log()
 	log_entry('Filename','x','y','z','r','type')
@@ -75,26 +94,31 @@ def main():
 		blockMove(keck_kw['z'],z)
 		if len(integration_time)>1:
 			subprocess.run(['iitime', integration_time[i]])
-		for angle in position_angles:
-			blockMove(keck_kw['r'],65.7 + angle)
+		for angle in rotation_angles:
+			blockMove(keck_kw['r'],default_rotation + angle)
 			direction = 1
 			for y in grid_steps_y:
 				blockMove(keck_kw['y'],y)	
 				for x in grid_steps_x[::direction]:
 					blockMove(keck_kw['x'],x)	
-					print('Taking frame {}/{}'.format(frame_number,total_frames))
-					img_filename = take_image()
-					frame_number+=1
-					img_filename = img_filename[-20:]
-					pcux = ktl.read(keck_kw['ao'], keck_kw['x'])
-					pcuy = ktl.read(keck_kw['ao'], keck_kw['y'])
-					pcupz = ktl.read(keck_kw['ao'], keck_kw['z'])
-					pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
-	 				#pcur = '65.7005'
-					log_entry(img_filename,pcux,pcuy,pcupz,pcur,'pinhole')
+					for n in range(repeats):
+						print('Taking frame {}/{}'.format(frame_number,total_frames))
+						img_filename = take_image()
+						frame_number+=1
+						img_filename = img_filename[-20:]
+						pcux = ktl.read(keck_kw['ao'], keck_kw['x'])
+						pcuy = ktl.read(keck_kw['ao'], keck_kw['y'])
+						pcupz = ktl.read(keck_kw['ao'], keck_kw['z'])
+						pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
+						log_entry(img_filename,pcux,pcuy,pcupz,pcur,'pinhole')
 				direction*=-1
 	print('Finished taking images. Time='+ datetime.now().strftime('%H%M%S'))
-  
+	
+	for time in np.unique(integration_time):  
+		subprocess.run(['iitime', time])
+		subprocess.run(['ifilt', 'Drk'])
+		drk_name = take_image()
+		log_entry(drk_name[-20:],pcux,pcuy,pcupz,pcur,'dark'+time)	
 
 def blockMove(keyword, position):
 	print('Moving {} to {}'.format(keyword, position))
@@ -173,8 +197,8 @@ def main_epics():
 	log_entry('Filename','x','y','z','r','type')
 	blockMoveNPEpics('to_pinhole_mask')
 	blockMoveEpics(pcu_uz,99.32)
-	for angle in position_angles:
-		blockMoveEpics(pcu_r,65.7+angle)
+	for angle in rotation_angles:
+		blockMoveEpics(pcu_r,default_rotation+angle)
 		direction = 1
 		for y in grid_steps_y:
 			blockMoveEpics(pcu_y,y)	
