@@ -75,7 +75,9 @@ def main():
 	check_limits(grid_steps_x,grid_steps_y,pinhole_x,pinhole_y)
 	total_frames = len(grid_steps_x) * len(grid_steps_y) * len(rotation_angles) * len(focus_positions) * repeats
 	# subprocess.run(['lamp', 'dome', '0'])  
-	subprocess.run(['iitime', integration_time[0]])
+
+	itime = integration_time[0]
+	subprocess.run(['iitime', itime])
 	subprocess.run(['icoadds', '1'])  
 	#subprocess.run(['insamp', '4']) 		#readout mode
 	# print('(Set K rotator to 225?)')
@@ -85,7 +87,7 @@ def main():
 	subprocess.run(['ifilt', filter_band, 'Open'])
 	# time.sleep(10)
 	make_log()
-	log_entry('Filename','x','y','z','r','type')
+	log_entry('Filename','x','y','z','r','itime','type')
 
 	#-----------starting moves-----------------
 	blockMoveNP(keck_kw['pinhole'])
@@ -93,7 +95,8 @@ def main():
 	for i, z in enumerate(focus_positions):
 		blockMove(keck_kw['z'],z)
 		if len(integration_time)>1:
-			subprocess.run(['iitime', integration_time[i]])
+			itime = integration_time[i]
+			subprocess.run(['iitime', itime])
 		for angle in rotation_angles:
 			blockMove(keck_kw['r'],default_rotation + angle)
 			direction = 1
@@ -110,15 +113,15 @@ def main():
 						pcuy = ktl.read(keck_kw['ao'], keck_kw['y'])
 						pcupz = ktl.read(keck_kw['ao'], keck_kw['z'])
 						pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
-						log_entry(img_filename,pcux,pcuy,pcupz,pcur,'pinhole')
+						log_entry(img_filename,pcux,pcuy,pcupz,pcur,itime,'pinhole')
 				direction*=-1
 	print('Finished taking images. Time='+ datetime.now().strftime('%H%M%S'))
 	
-	for time in np.unique(integration_time):  
-		subprocess.run(['iitime', time])
+	for itime in np.unique(integration_time):  
+		subprocess.run(['iitime', itime])
 		subprocess.run(['ifilt', 'Drk'])
 		drk_name = take_image()
-		log_entry(drk_name[-20:],pcux,pcuy,pcupz,pcur,'dark'+time)	
+		log_entry(drk_name[-20:],pcux,pcuy,pcupz,pcur,itime,'dark')	
 
 def blockMove(keyword, position):
 	print('Moving {} to {}'.format(keyword, position))
@@ -165,8 +168,8 @@ def make_log():
 	print('Log filename:', log_filename)
 	logging.basicConfig(filename=log_filename, level=logging.INFO,format='%(message)s')
 
-def log_entry(filename,x,y,z,r,flag):
-	logging.info('{:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format(filename,x,y,z,r,flag))
+def log_entry(filename,x,y,z,r,t,flag):
+	logging.info('{:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format(filename,x,y,z,r,t,flag))
 
 
 def check_limits(x_grid,y_grid,x_pinhole,y_pinhole):
