@@ -24,7 +24,7 @@ filter_band = 'Hbb'
 if mode == 'distortion':
 	dither_spacing = 6.16 #mm   #6.16 for 3x3, 3.1 for 5x5
 	dither_grid_size = 3  # e.g. 5 = 5x5 grid.  	#max radius = 12mm -> max grid extent = 16.8mm
-	rotation_angles =[0,45,90] # e.g. [0, 45] degrees
+	rotation_angles =[0,30,90] # e.g. [0, 45] degrees
 	focus_positions = [pinhole_focus]   #z position when in focus. Enter multiple positions for phase diversity measurements.  Focus = 99.32, max = 102
 	integration_time = ['60'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
 	repeats = 1 #number of images to take at each location.
