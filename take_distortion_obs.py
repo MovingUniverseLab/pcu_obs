@@ -26,7 +26,7 @@ if mode == 'distortion':
 	dither_grid_size = 3  # e.g. 5 = 5x5 grid.  	#max radius = 12mm -> max grid extent = 16.8mm
 	rotation_angles =[0,30,90] # e.g. [0, 45] degrees
 	focus_positions = [pinhole_focus]   #z position when in focus. Enter multiple positions for phase diversity measurements.  Focus = 99.32, max = 102
-	integration_time = ['60'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
+	integration_time = ['10'] #'10' for dome flat postion, '60' for horizon with tertiary not aligned. Enter multiple values for phase diversity.
 	repeats = 1 #number of images to take at each location.
 
 if mode == 'phase_diversity':
@@ -115,13 +115,16 @@ def main():
 						pcur = ktl.read(keck_kw['ao'], keck_kw['r'])
 						log_entry(img_filename,pcux,pcuy,pcupz,pcur,itime,'pinhole')
 				direction*=-1
-	print('Finished taking images. Time='+ datetime.now().strftime('%H%M%S'))
+	print('Finished taking pinhole images. Time='+ datetime.now().strftime('%H%M%S'))
 	
 	for itime in np.unique(integration_time):  
 		subprocess.run(['iitime', itime])
 		subprocess.run(['ifilt', 'Drk'])
 		drk_name = take_image()
 		log_entry(drk_name[-20:],pcux,pcuy,pcupz,pcur,itime,'dark')	
+
+	print('Finished taking dark images. Time='+ datetime.now().strftime('%H%M%S'))
+
 
 def blockMove(keyword, position):
 	print('Moving {} to {}'.format(keyword, position))
