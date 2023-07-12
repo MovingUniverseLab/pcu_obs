@@ -63,6 +63,16 @@ The maxium Z position is 102mm
 Filters:
 Tests with the Kp filter show a lot of the dust/marks on the pinhole mask surface, probably due to IR emission. The Hbb filter is closer to visible, so we see less of that.
 
+Scale:
+The pinholes are 0.5mm apart
+OSIRIS image scale = 138.5 pixels per mm on the pinhole mask.
+
+Dithers
+We want pairs of points to be imaged on opposite sides of the detector. Say 10% in from each edge = 1843 pixels ~ 13.2mm
+Suggested dither_spacing = 6.6mm for 3x3
+						 = 3.3mm for 5x5
+Avoid a multiple of 0.5mm so that pinholes are not imaged at the same detector positions (we would prefer to sample more areas).
+
 Manually controlling the PCU:
 You can command the PCU with the GUI either by selecting a named position and clicking GO, or typing an X/Y/Z coordinate and clicking GO. There are fields for absolute moves, and moves relative to the current position.
 The named positions are in the dropdown menu on the top left. The relevant ones for us are PINHOLE_MASK (the on-axis position for taking pinhole observations), and HOME (stows the PCU away to the side when you are finished). 
