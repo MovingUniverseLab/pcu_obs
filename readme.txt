@@ -34,14 +34,18 @@ You can set up the parameters for the run by modifying the variables at the top 
 3) Have the telscope in dome flat position, and set the dome lamps to max (0):
 	lamp dome 0
 
-4) Run the script:
+4) Take a test image (optional):
+	Use the GUI to send the PCU to the pinhole_mask named position. Take an image with OSIRIS
+	Sometimes the first image shows non-common path abberations due to the dm shape. If you see these, have the support astronomer run image sharpening.
+
+5) Run the script:
 	kpython3 take_distortion_obs.py
 	It will take the observations, take a dark, and save a log file.
 
-5) Stow the PCU when you're done:
+6) Stow the PCU when you're done:
 	In the PCU GUI dropdown menu, select HOME, and click GO.
 
-5) Download the data and log files to your machine using scp.
+7) Download the data and log files to your machine using scp.
 	Do Keck authenticaiton in browser.
 	Images are in the usual place, eg /s/sdata1100/osiris6/230405/IMAG/raw
 	Log files are in /home/osiris, use *.log with scp
